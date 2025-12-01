@@ -1,0 +1,8 @@
+[book]
+title = "Home Lab"
+authors = ["Mike Sandman"]
+language = "en"
+src = "src"
+
+[build]
+build-dir = "../book"

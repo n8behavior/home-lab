@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+info() { echo -e "${GREEN}[INFO]${NC} $*"; }
+warn() { echo -e "${YELLOW}[WARN]${NC} $*"; }
+error() { echo -e "${RED}[ERROR]${NC} $*" >&2; }
+
+# Check if a command exists
+command_exists() {
+    command -v "$1" &> /dev/null
+}
+
+# Install mdbook via cargo
+install_mdbook() {
+    if command_exists mdbook; then
+        info "mdbook is already installed: $(mdbook --version)"
+        return 0
+    fi
+
+    if ! command_exists cargo; then
+        error "cargo not found. Please install the Rust toolchain first."
+        exit 1
+    fi
+
+    info "Installing mdbook via cargo..."
+    cargo install mdbook
+    info "mdbook installed successfully"
+}
+
+# Install Incus from Zabbly repository
+install_incus() {
+    if command_exists incus; then
+        info "Incus is already installed: $(incus --version)"
+        return 0
+    fi
+
+    info "Installing Incus from Zabbly stable repository..."
+
+    # Create keyrings directory
+    sudo mkdir -p /etc/apt/keyrings/
+
+    # Download and install the GPG key
+    info "Adding Zabbly GPG key..."
+    curl -fsSL https://pkgs.zabbly.com/key.asc | sudo tee /etc/apt/keyrings/zabbly.asc > /dev/null
+
+    # Verify key fingerprint
+    local fingerprint
+    fingerprint=$(gpg --show-keys --fingerprint /etc/apt/keyrings/zabbly.asc 2>/dev/null | grep -oP '[A-F0-9 ]{40,}' | tr -d ' ' | head -1)
+    local expected="4EFC5906 96CB15B8 7C73A3AD 82CC8797 C838DCFD"
+    expected="${expected// /}"
+
+    if [[ "$fingerprint" != "$expected" ]]; then
+        error "GPG key fingerprint mismatch!"
+        error "Expected: $expected"
+        error "Got: $fingerprint"
+        exit 1
+    fi
+    info "GPG key fingerprint verified"
+
+    # Add the repository (stable channel)
+    info "Adding Zabbly apt repository (stable channel)..."
+    sudo sh -c 'cat <<EOF > /etc/apt/sources.list.d/zabbly-incus-stable.sources
+Enabled: yes
+Types: deb
+URIs: https://pkgs.zabbly.com/incus/stable
+Suites: $(. /etc/os-release && echo ${VERSION_CODENAME})
+Components: main
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/zabbly.asc
+EOF'
+
+    # Update and install
+    info "Updating apt and installing Incus..."
+    sudo apt-get update
+    sudo apt-get install -y incus incus-ui-canonical
+
+    info "Incus installed successfully"
+}
+
+# Configure Incus (enable web UI)
+configure_incus() {
+    local https_addr
+    https_addr=$(sudo incus config get core.https_address 2>/dev/null || true)
+
+    if [[ -z "$https_addr" ]]; then
+        info "Enabling Incus web UI on port 8443..."
+        sudo incus config set core.https_address :8443
+    else
+        info "Incus web UI already configured: $https_addr"
+    fi
+}
+
+main() {
+    info "Home Lab initialization starting..."
+
+    install_mdbook
+    install_incus
+    configure_incus
+
+    info "Initialization complete!"
+    echo
+    info "Next steps:"
+    echo "  - Access the web UI at https://localhost:8443"
+    echo "  - Build docs with 'cd docs && mdbook build'"
+    echo
+    info "Group membership for Incus access:"
+    echo "  - 'incus' group: Limited access (launch containers in user namespace)"
+    echo "  - 'incus-admin' group: Full admin access (storage, networks, config)"
+    echo
+    echo "  Add yourself:  sudo usermod -aG incus-admin \$USER"
+    echo "  Then log out and back in for changes to take effect."
+}
+
+main "$@"

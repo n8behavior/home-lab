@@ -1,0 +1,3 @@
+# mdbook output
+/book/
+.claude/settings.local.json
