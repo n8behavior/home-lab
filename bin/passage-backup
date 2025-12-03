@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PASSAGE_STORE="$HOME/.passage/store"
+BACKUP_PATH="/media/sandman/Recovery/secrets/passage-store"
+
+case "${1:-}" in
+    push)
+        if [[ ! -d "$(dirname "$BACKUP_PATH")" ]]; then
+            echo "Error: Recovery drive not mounted" >&2
+            exit 1
+        fi
+        rsync -av --delete "$PASSAGE_STORE/" "$BACKUP_PATH/"
+        echo "✓ Pushed passage store to Recovery drive"
+        ;;
+    pull)
+        if [[ ! -d "$BACKUP_PATH" ]]; then
+            echo "Error: No backup found at $BACKUP_PATH" >&2
+            exit 1
+        fi
+        rsync -av "$BACKUP_PATH/" "$PASSAGE_STORE/"
+        echo "✓ Pulled passage store from Recovery drive"
+        ;;
+    *)
+        echo "Usage: $(basename "$0") <push|pull>"
+        echo "  push - backup passage store to Recovery drive"
+        echo "  pull - restore passage store from Recovery drive"
+        exit 1
+        ;;
+esac
