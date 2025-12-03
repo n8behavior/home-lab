@@ -11,6 +11,20 @@
 | Port | 8888 |
 | Database | SQLite |
 
+## Secrets
+
+All history is encrypted on the client before syncing. The encryption key is stored in passage:
+
+```bash
+# View the client encryption key
+passage show atuin/key
+
+# Location on disk (after restore)
+~/.local/share/atuin/key
+```
+
+This key is restored automatically by `bootstrap-dotfiles`. Without it, you cannot decrypt your synced history.
+
 ## Installation
 
 The container runs Ubuntu with atuin installed via the official installer:
@@ -35,8 +49,8 @@ db_uri = "sqlite://.config/atuin-server.db"
 ```
 
 Key settings:
-- `host = "0.0.0.0"` - Listen on all interfaces (required for external access)
-- `open_registration = true` - Allow new users to register
+- `host = "0.0.0.0"` - Listen on all interfaces (required for container access)
+- `open_registration = true` - Set to `false` after registering your user
 
 ## Systemd Service
 
@@ -78,8 +92,8 @@ incus exec atuin-server -- systemctl restart atuin-server
 
 On client machines, configure atuin to use this server:
 
-```bash
-# In ~/.config/atuin/config.toml
+```toml
+# ~/.config/atuin/config.toml
 sync_address = "http://10.206.67.79:8888"
 ```
 
@@ -88,6 +102,12 @@ Then register and sync:
 ```bash
 atuin register -u <username> -e <email>
 atuin sync
+```
+
+The encryption key is generated on first registration. Back it up to passage:
+
+```bash
+cat ~/.local/share/atuin/key | passage insert -m atuin/key
 ```
 
 ## Testing
@@ -99,3 +119,7 @@ curl http://10.206.67.79:8888
 ```
 
 Should return JSON with server version and a Terry Pratchett quote.
+
+## Backup
+
+The client encryption key is backed up via passage to the Recovery drive. The server database contains only encrypted history - it's useless without the client key.
