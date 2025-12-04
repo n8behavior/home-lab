@@ -118,6 +118,15 @@ configure_user_project() {
     info "Configuring user project disk paths..."
     sudo incus project set "$project" restricted.devices.disk.paths="$required_paths"
     info "Added /media/sandman/Recovery to allowed disk paths"
+
+    # Allow USB devices (for YubiKey passthrough)
+    local usb_allowed
+    usb_allowed=$(sudo incus project get "$project" restricted.devices.usb 2>/dev/null || true)
+
+    if [[ "$usb_allowed" != "allow" ]]; then
+        info "Enabling USB device passthrough..."
+        sudo incus project set "$project" restricted.devices.usb=allow
+    fi
 }
 
 main() {

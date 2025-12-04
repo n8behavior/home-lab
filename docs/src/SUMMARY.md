@@ -10,5 +10,6 @@
   - [Backup & Recovery](./secrets/backup.md)
 - [Incus](./incus.md)
   - [Mounting Host Directories](./incus/mounts.md)
+  - [YubiKey Passthrough](./incus/yubikey.md)
 - [Services](./services.md)
   - [Atuin Server](./services/atuin-server.md)
