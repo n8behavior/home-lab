@@ -47,6 +47,30 @@ bin/mount-recovery foo remove
 
 The `bin/init` script configures the required disk paths automatically.
 
+## UID Matching
+
+Mounted host files are owned by UID 1000 (the host `sandman` user). For the container user to access them, the container's `sandman` user must also be UID 1000.
+
+The default Ubuntu image has a `ubuntu` user with UID 1000, so `sandman` gets a different UID. Fix this after creating the container:
+
+```bash
+incus stop <container>
+incus start <container>
+incus exec <container> -- bash -c '
+  userdel -r ubuntu 2>/dev/null
+  usermod -u 1000 sandman
+  groupmod -g 1000 sandman
+  chown -R sandman:sandman /home/sandman
+'
+```
+
+Verify:
+
+```bash
+incus exec <container> -- id sandman
+# Should show uid=1000(sandman) gid=1000(sandman)
+```
+
 ## Managing Devices
 
 ```bash
@@ -76,3 +100,24 @@ sudo incus --project user-1000 config device add foo ...
 ```
 
 Or better: add the path to allowed paths, then use `incus` without sudo.
+
+### Stale Mount After Host Remount
+
+If you unmount and remount a drive on the host while the container is running, the mount inside the container becomes stale:
+
+```
+fatal: cannot change to '/media/sandman/Recovery/': Input/output error
+```
+
+Fix by removing and re-adding the device:
+
+```bash
+incus config device remove foo recovery
+incus config device add foo recovery disk source=/media/sandman/Recovery path=/media/sandman/Recovery
+```
+
+Or restart the container:
+
+```bash
+incus restart foo
+```

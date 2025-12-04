@@ -42,26 +42,6 @@ The `user-1000` project must allow USB devices. This is configured by `bin/init`
 sudo incus project set user-1000 restricted.devices.usb=allow
 ```
 
-## User UID Matching
-
-For mounted host directories (like Recovery drive) to be accessible, the container user must have UID 1000 to match the host user.
-
-The default Ubuntu image has a `ubuntu` user with UID 1000. To fix this:
-
-```bash
-# Stop container to avoid processes holding the user
-incus stop <container>
-incus start <container>
-
-# Remove ubuntu user and change sandman to UID 1000
-incus exec <container> -- bash -c '
-  userdel -r ubuntu 2>/dev/null
-  usermod -u 1000 sandman
-  groupmod -g 1000 sandman
-  chown -R sandman:sandman /home/sandman
-'
-```
-
 ## Verification
 
 Test that the YubiKey is accessible:

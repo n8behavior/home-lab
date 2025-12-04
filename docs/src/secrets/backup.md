@@ -39,6 +39,7 @@ rsync -av --delete ~/.passage/store/ /media/sandman/Recovery/secrets/passage-sto
 | SOPS key | `sops/age-key` | File-based age key |
 | Atuin key | `atuin/key` | Sync encryption key |
 | Keyrings | `keyrings/login.keyring` | GNOME keyring |
+| GitHub CLI | `gh/token` | For headless environments without keyring |
 
 ## New Machine Bootstrap
 
