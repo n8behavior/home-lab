@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Mount the Recovery drive into an Incus container for testing
+
+RECOVERY_PATH="/media/sandman/Recovery"
+
+usage() {
+    echo "Usage: $0 <container> [add|remove]"
+    echo
+    echo "Mount or unmount the Recovery drive in a container."
+    echo
+    echo "Arguments:"
+    echo "  container   Name of the Incus container"
+    echo "  add         Mount the Recovery drive (default)"
+    echo "  remove      Unmount the Recovery drive"
+    echo
+    echo "Examples:"
+    echo "  $0 foo          # Mount Recovery into foo"
+    echo "  $0 foo add      # Same as above"
+    echo "  $0 foo remove   # Unmount Recovery from foo"
+    exit 1
+}
+
+[[ $# -lt 1 ]] && usage
+
+CONTAINER="$1"
+ACTION="${2:-add}"
+
+case "$ACTION" in
+    add)
+        if [[ ! -d "$RECOVERY_PATH" ]]; then
+            echo "Error: Recovery drive not mounted at $RECOVERY_PATH"
+            echo "Attach the USB drive first."
+            exit 1
+        fi
+
+        # Check if device already exists
+        if incus config device show "$CONTAINER" 2>/dev/null | grep -q "^recovery:"; then
+            echo "Recovery already mounted in $CONTAINER"
+            exit 0
+        fi
+
+        incus config device add "$CONTAINER" recovery disk \
+            source="$RECOVERY_PATH" \
+            path="$RECOVERY_PATH"
+        echo "Recovery drive mounted in $CONTAINER at $RECOVERY_PATH"
+        ;;
+
+    remove)
+        if ! incus config device show "$CONTAINER" 2>/dev/null | grep -q "^recovery:"; then
+            echo "Recovery not mounted in $CONTAINER"
+            exit 0
+        fi
+
+        incus config device remove "$CONTAINER" recovery
+        echo "Recovery drive unmounted from $CONTAINER"
+        ;;
+
+    *)
+        usage
+        ;;
+esac

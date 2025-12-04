@@ -96,12 +96,37 @@ configure_incus() {
     fi
 }
 
+# Configure user project disk paths (allow mounting Recovery drive)
+configure_user_project() {
+    local project="user-1000"
+    local required_paths="/home/sandman,/media/sandman/Recovery"
+
+    # Check if user project exists
+    if ! sudo incus project show "$project" &>/dev/null; then
+        info "User project $project not found, skipping disk paths configuration"
+        return 0
+    fi
+
+    local current_paths
+    current_paths=$(sudo incus project get "$project" restricted.devices.disk.paths 2>/dev/null || true)
+
+    if [[ "$current_paths" == "$required_paths" ]]; then
+        info "User project disk paths already configured"
+        return 0
+    fi
+
+    info "Configuring user project disk paths..."
+    sudo incus project set "$project" restricted.devices.disk.paths="$required_paths"
+    info "Added /media/sandman/Recovery to allowed disk paths"
+}
+
 main() {
     info "Home Lab initialization starting..."
 
     install_mdbook
     install_incus
     configure_incus
+    configure_user_project
 
     info "Initialization complete!"
     echo
