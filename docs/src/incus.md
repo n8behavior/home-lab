@@ -45,20 +45,42 @@ Container data is stored on the host using bind-mounts, following [XDG Base Dire
 {{#include ../../Makefile:paths}}
 ```
 
-## Creating Test Containers
+## Incus Hosts
 
-Use the included cloud-init to create containers that can run Incus (for testing):
+The `incus/cloud-init/incus-host.yaml` cloud-init creates containers or VMs capable of running Incus. Use cases include:
+
+- **Clustering**: Build multi-node Incus clusters
+- **Nested environments**: Run containers inside containers
+- **Development sandboxes**: Isolated Incus instances for experimentation
 
 ```bash
-incus launch images:ubuntu/24.04/cloud test-host \
-  -c security.nesting=true \
+incus launch images:ubuntu/24.04/cloud my-incus-host \
   -c cloud-init.user-data="$(cat incus/cloud-init/incus-host.yaml)"
 
-# Wait for Incus to install
+# Wait for cloud-init to complete
+incus exec my-incus-host -- cloud-init status --wait
+
+# Verify Incus is installed
+incus exec my-incus-host -- incus --version
+```
+
+## Testing the Makefile
+
+To validate `make init` in a clean environment:
+
+```bash
+# Create a fresh Incus host
+incus launch images:ubuntu/24.04/cloud test-host \
+  -c cloud-init.user-data="$(cat incus/cloud-init/incus-host.yaml)"
 incus exec test-host -- cloud-init status --wait
 
-# Verify
-incus exec test-host -- incus --version
+# Clone and test
+incus exec test-host -- bash -c "
+  git clone https://github.com/n8behavior/home-lab
+  cd home-lab
+  make init
+  make status
+"
 ```
 
 ## Recovery Workflow
@@ -78,6 +100,7 @@ make status
 ### "Certificate is restricted"
 
 You need admin access to create projects:
+
 ```bash
 sudo usermod -aG incus-admin $USER
 # Logout and login (or reboot if systemd --user is stale)
@@ -87,14 +110,16 @@ See [The Annals of Incus Hell](./annals.md) for debugging group membership issue
 
 ### "No root device could be found"
 
-The project's default profile is empty. Apply the profile:
+The project's default profile is empty. Apply the profiles:
+
 ```bash
-make setup-profile
+make setup-profiles
 ```
 
 ### Permission denied on bind-mount
 
 Ensure UID mapping is configured in the profile:
+
 ```bash
 incus profile show default --project homelab | grep idmap
 ```

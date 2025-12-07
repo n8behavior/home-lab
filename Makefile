@@ -56,6 +56,7 @@ help: ## Show this help
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(BLUE)%-20s$(RESET) %s\n", $$1, $$2}'
 
 init: install-incus configure-incus setup-defaults create-project setup-profiles ## Bootstrap Incus from scratch
+	@incus project switch $(INCUS_PROJECT)
 	@echo ""
 	@echo "$(GREEN)Initialization complete!$(RESET)"
 	@echo ""
