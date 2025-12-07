@@ -20,6 +20,8 @@ XDG_CACHE_HOME  ?= $(HOME)/.cache
 # Incus-specific paths
 INCUS_DATA_DIR  ?= $(XDG_DATA_HOME)/incus
 INCUS_PROJECT   ?= homelab
+INCUS_UID       ?= $(shell id -u)
+INCUS_GID       ?= $(shell id -g)
 
 # Removable media (udisks2 default: /media/$USER)
 MEDIA_DIR       ?= /media/$(USER)
@@ -149,8 +151,8 @@ create-project: ## Create homelab project with restrictions
 	@incus project set $(INCUS_PROJECT) restricted.devices.disk.paths="$(HOME),$(RECOVERY_DIR)"
 	@incus project set $(INCUS_PROJECT) restricted.devices.usb=allow
 	@incus project set $(INCUS_PROJECT) restricted.containers.nesting=allow
-	@incus project set $(INCUS_PROJECT) restricted.idmap.uid=1000
-	@incus project set $(INCUS_PROJECT) restricted.idmap.gid=1000
+	@incus project set $(INCUS_PROJECT) restricted.idmap.uid=$(INCUS_UID)
+	@incus project set $(INCUS_PROJECT) restricted.idmap.gid=$(INCUS_GID)
 # ANCHOR_END: project-config
 
 setup-profiles: ## Import all profiles from incus/profiles/
@@ -167,7 +169,8 @@ setup-profiles: ## Import all profiles from incus/profiles/
 			incus profile create "$$target" --project $(INCUS_PROJECT); \
 		fi; \
 		echo "  Applying: $$file -> $$target"; \
-		incus profile edit "$$target" --project $(INCUS_PROJECT) < "$$file"; \
+		sed 's/uid 1000 1000/uid $(INCUS_UID) $(INCUS_UID)/; s/gid 1000 1000/gid $(INCUS_GID) $(INCUS_GID)/' "$$file" | \
+			incus profile edit "$$target" --project $(INCUS_PROJECT); \
 	done
 
 #=============================================================================
