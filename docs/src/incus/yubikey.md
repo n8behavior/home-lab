@@ -17,7 +17,7 @@ For a new container, run these steps:
 incus config device add <container> yubikey usb vendorid=1050
 
 # 2. Add user to plugdev group
-incus exec <container> -- usermod -aG plugdev sandman
+incus exec <container> -- usermod -aG plugdev $USER
 
 # 3. Create polkit rule for smart card access
 incus exec <container> -- bash -c 'cat > /etc/polkit-1/rules.d/01-pcscd.rules << "EOF"
@@ -47,7 +47,7 @@ incus project set homelab restricted.devices.usb=allow
 Test that the YubiKey is accessible:
 
 ```bash
-incus exec <container> -- su -l sandman -c 'age-plugin-yubikey --list'
+incus exec <container> -- su -l $USER -c 'age-plugin-yubikey --list'
 ```
 
 Should display your YubiKey identity:
@@ -67,7 +67,7 @@ age1yubikey1q...
 The project doesn't allow USB devices:
 
 ```bash
-sudo incus project set user-1000 restricted.devices.usb=allow
+incus project set homelab restricted.devices.usb=allow
 ```
 
 ### "Access was denied because of a security violation"
@@ -76,7 +76,7 @@ The polkit rule is missing or the user isn't in `plugdev`. Check:
 
 ```bash
 # Verify group membership
-incus exec <container> -- su -l sandman -c 'id'
+incus exec <container> -- su -l $USER -c 'id'
 
 # Check polkit rule exists
 incus exec <container> -- cat /etc/polkit-1/rules.d/01-pcscd.rules

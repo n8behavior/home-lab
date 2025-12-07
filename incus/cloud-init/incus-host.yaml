@@ -3,12 +3,14 @@
 #
 # Usage:
 #   incus launch images:ubuntu/24.04/cloud my-incus-host \
-#     -c security.nesting=true \
 #     -c cloud-init.user-data="$(cat incus/cloud-init/incus-host.yaml)"
 #
 # After boot:
 #   incus exec my-incus-host -- cloud-init status --wait
 #   incus exec my-incus-host -- incus list
+#
+# For YubiKey passthrough (from physical host):
+#   incus config device add my-incus-host yubikey usb vendorid=1050
 
 package_update: true
 
@@ -17,6 +19,7 @@ packages:
   - make
   - curl
   - gpg
+  - pcscd        # smart card daemon for YubiKey
 
 runcmd:
   # Download and verify Zabbly GPG key
@@ -47,5 +50,16 @@ runcmd:
   - apt-get install -y incus incus-ui-canonical
   # Enable web UI
   - incus config set core.https_address :8443
+  # Configure polkit for YubiKey/smart card access
+  - |
+    cat > /etc/polkit-1/rules.d/01-pcscd.rules << "EOF"
+    polkit.addRule(function(action, subject) {
+        if ((action.id == "org.debian.pcsc-lite.access_pcsc" ||
+             action.id == "org.debian.pcsc-lite.access_card") &&
+            subject.isInGroup("plugdev")) {
+            return polkit.Result.YES;
+        }
+    });
+    EOF
   # Signal completion
   - echo "Incus host ready" > /root/incus-host-ready
