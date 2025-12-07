@@ -15,20 +15,20 @@ incus config device add foo mydata disk source=/home/sandman/data path=/data
 
 ## Project Restrictions
 
-The `user-1000` project restricts which paths can be mounted. Check allowed paths:
+The `homelab` project restricts which paths can be mounted. Check allowed paths:
 
 ```bash
-incus project show user-1000 | grep disk.paths
+incus project show homelab | grep disk.paths
 ```
 
-Default: `/home/sandman`
+Default: `$HOME` and `$RECOVERY_DIR` (see Makefile for values)
 
 ### Adding Allowed Paths
 
-To mount paths outside `/home/sandman` (like the Recovery drive), add them to the allowed list:
+To mount additional paths, update the project restrictions:
 
 ```bash
-sudo incus project set user-1000 restricted.devices.disk.paths="/home/sandman,/media/sandman/Recovery"
+incus project set homelab restricted.devices.disk.paths="/home/sandman,/media/sandman/Recovery,/new/path"
 ```
 
 ## Mounting the Recovery Drive
@@ -88,7 +88,7 @@ incus config device remove foo recovery
 The path isn't in `restricted.devices.disk.paths`. Add it:
 
 ```bash
-sudo incus project set user-1000 restricted.devices.disk.paths="/home/sandman,/new/path"
+incus project set homelab restricted.devices.disk.paths="/home/sandman,/media/sandman/Recovery,/new/path"
 ```
 
 ### "Instance not found" with sudo
@@ -96,7 +96,7 @@ sudo incus project set user-1000 restricted.devices.disk.paths="/home/sandman,/n
 When using `sudo incus`, it defaults to the `default` project. Specify the project:
 
 ```bash
-sudo incus --project user-1000 config device add foo ...
+sudo incus --project homelab config device add foo ...
 ```
 
 Or better: add the path to allowed paths, then use `incus` without sudo.

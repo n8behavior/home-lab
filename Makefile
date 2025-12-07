@@ -21,8 +21,10 @@ XDG_CACHE_HOME  ?= $(HOME)/.cache
 INCUS_DATA_DIR  ?= $(XDG_DATA_HOME)/incus
 INCUS_PROJECT   ?= homelab
 
-# Backup configuration
-BACKUP_DIR      ?= /media/sandman/Recovery/backups
+# Removable media (udisks2 default: /media/$USER)
+MEDIA_DIR       ?= /media/$(USER)
+RECOVERY_DIR    ?= $(MEDIA_DIR)/Recovery
+BACKUP_DIR      ?= $(RECOVERY_DIR)/backups
 # ANCHOR_END: paths
 
 # Zabbly GPG key fingerprint (for verification)
@@ -49,6 +51,7 @@ help: ## Show this help
 	@echo "Variables:"
 	@echo "  INCUS_DATA_DIR  Data directory (default: $(INCUS_DATA_DIR))"
 	@echo "  INCUS_PROJECT   Target project (default: $(INCUS_PROJECT))"
+	@echo "  RECOVERY_DIR    Recovery drive (default: $(RECOVERY_DIR))"
 	@echo "  BACKUP_DIR      Backup location (default: $(BACKUP_DIR))"
 	@echo ""
 	@echo "Targets:"
@@ -143,7 +146,7 @@ create-project: ## Create homelab project with restrictions
 	@incus project set $(INCUS_PROJECT) features.profiles=true
 	@incus project set $(INCUS_PROJECT) features.storage.volumes=true
 	@incus project set $(INCUS_PROJECT) restricted.devices.disk=allow
-	@incus project set $(INCUS_PROJECT) restricted.devices.disk.paths=/home/sandman
+	@incus project set $(INCUS_PROJECT) restricted.devices.disk.paths="$(HOME),$(RECOVERY_DIR)"
 	@incus project set $(INCUS_PROJECT) restricted.devices.usb=allow
 	@incus project set $(INCUS_PROJECT) restricted.containers.nesting=allow
 	@incus project set $(INCUS_PROJECT) restricted.idmap.uid=1000
