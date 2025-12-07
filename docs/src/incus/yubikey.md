@@ -8,9 +8,27 @@ Pass a YubiKey into a container for use with passage, age-plugin-yubikey, and ot
 - Container with pcscd installed
 - User in the `plugdev` group
 
-## Quick Setup
+## Incus Host Containers
 
-For a new container, run these steps:
+Containers created with `incus/cloud-init/incus-host.yaml` have pcscd, polkit rules, passage, and age-plugin-yubikey pre-installed. Just add the USB device and restart pcscd:
+
+```bash
+# Create the container
+incus launch images:ubuntu/24.04/cloud my-incus-host \
+  -c cloud-init.user-data="$(cat incus/cloud-init/incus-host.yaml)"
+incus exec my-incus-host -- cloud-init status --wait
+
+# Add YubiKey and restart pcscd
+incus config device add my-incus-host yubikey usb vendorid=1050
+incus exec my-incus-host -- systemctl restart pcscd
+
+# Verify
+incus exec my-incus-host -- age-plugin-yubikey --list
+```
+
+## Quick Setup (Other Containers)
+
+For a new container without the incus-host cloud-init:
 
 ```bash
 # 1. Add YubiKey device to container

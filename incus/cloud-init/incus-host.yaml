@@ -20,6 +20,8 @@ packages:
   - curl
   - gpg
   - pcscd        # smart card daemon for YubiKey
+  - pcsc-tools   # debugging tools (pcsc_scan)
+  - age          # encryption tool
 
 runcmd:
   # Download and verify Zabbly GPG key
@@ -61,5 +63,27 @@ runcmd:
         }
     });
     EOF
+  # Install age-plugin-yubikey
+  - |
+    ARCH=$(dpkg --print-architecture)
+    case "$ARCH" in
+      amd64) ARCH="x86_64" ;;
+      arm64) ARCH="aarch64" ;;
+    esac
+    curl -sL "https://github.com/str4d/age-plugin-yubikey/releases/download/v0.5.0/age-plugin-yubikey-v0.5.0-${ARCH}-linux.tar.gz" | \
+      tar xz --strip-components=1 -C /usr/local/bin
+  # Install passage (shell script, requires make install)
+  - |
+    git clone https://github.com/FiloSottile/passage /tmp/passage
+    cd /tmp/passage && make install PREFIX=/usr/local
+    rm -rf /tmp/passage
   # Signal completion
   - echo "Incus host ready" > /root/incus-host-ready
+
+final_message: |
+  Incus host ready!
+
+  For YubiKey access, add USB device then restart pcscd:
+    incus config device add <container> yubikey usb vendorid=1050
+    incus exec <container> -- systemctl restart pcscd
+    incus exec <container> -- age-plugin-yubikey --list
