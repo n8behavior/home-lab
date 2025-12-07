@@ -7,6 +7,7 @@
 description: Default Incus profile for homelab project
 
 config:
+  security.nesting: "true"
   raw.idmap: |-
     uid 1000 1000
     gid 1000 1000
@@ -18,5 +19,5 @@ devices:
     type: disk
   eth0:
     name: eth0
-    network: incusbr-1000
+    network: incusbr0
     type: nic

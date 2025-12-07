@@ -55,7 +55,7 @@ help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(BLUE)%-20s$(RESET) %s\n", $$1, $$2}'
 
-init: install-incus configure-incus create-project setup-profile ## Bootstrap Incus from scratch
+init: install-incus configure-incus setup-defaults create-project setup-profiles ## Bootstrap Incus from scratch
 	@echo ""
 	@echo "$(GREEN)Initialization complete!$(RESET)"
 	@echo ""
@@ -85,15 +85,15 @@ install-incus: ## Install Incus from Zabbly repository
 			exit 1; \
 		fi; \
 		echo "$(GREEN)Adding Zabbly apt repository...$(RESET)"; \
-		. /etc/os-release && sudo tee /etc/apt/sources.list.d/zabbly-incus-stable.sources > /dev/null <<-EOF; \
-		Enabled: yes
-		Types: deb
-		URIs: https://pkgs.zabbly.com/incus/stable
-		Suites: $$VERSION_CODENAME
-		Components: main
-		Architectures: $$(dpkg --print-architecture)
-		Signed-By: /etc/apt/keyrings/zabbly.asc
-		EOF
+		. /etc/os-release && printf '%s\n' \
+			"Enabled: yes" \
+			"Types: deb" \
+			"URIs: https://pkgs.zabbly.com/incus/stable" \
+			"Suites: $$VERSION_CODENAME" \
+			"Components: main" \
+			"Architectures: $$(dpkg --print-architecture)" \
+			"Signed-By: /etc/apt/keyrings/zabbly.asc" \
+			| sudo tee /etc/apt/sources.list.d/zabbly-incus-stable.sources > /dev/null; \
 		sudo apt-get update; \
 		sudo apt-get install -y incus incus-ui-canonical; \
 		echo "$(GREEN)Incus installed successfully$(RESET)"; \
@@ -108,11 +108,25 @@ configure-incus: ## Configure Incus (enable web UI)
 		sudo incus config set core.https_address :8443; \
 	fi
 
+setup-defaults: ## Create default storage pool and network
+	@if incus storage show default >/dev/null 2>&1; then \
+		echo "$(GREEN)Storage pool 'default' already exists$(RESET)"; \
+	else \
+		echo "$(GREEN)Creating default storage pool...$(RESET)"; \
+		incus storage create default dir; \
+	fi
+	@if incus network show incusbr0 >/dev/null 2>&1; then \
+		echo "$(GREEN)Network 'incusbr0' already exists$(RESET)"; \
+	else \
+		echo "$(GREEN)Creating default network...$(RESET)"; \
+		incus network create incusbr0; \
+	fi
+
 #=============================================================================
 # Project and profile setup
 #=============================================================================
 
-.PHONY: create-project setup-profile
+.PHONY: create-project setup-profiles setup-defaults
 
 create-project: ## Create homelab project with restrictions
 	@if incus project show $(INCUS_PROJECT) >/dev/null 2>&1; then \
@@ -130,13 +144,27 @@ create-project: ## Create homelab project with restrictions
 	@incus project set $(INCUS_PROJECT) restricted.devices.disk=allow
 	@incus project set $(INCUS_PROJECT) restricted.devices.disk.paths=/home/sandman
 	@incus project set $(INCUS_PROJECT) restricted.devices.usb=allow
+	@incus project set $(INCUS_PROJECT) restricted.containers.nesting=allow
 	@incus project set $(INCUS_PROJECT) restricted.idmap.uid=1000
 	@incus project set $(INCUS_PROJECT) restricted.idmap.gid=1000
 # ANCHOR_END: project-config
 
-setup-profile: ## Configure default profile from native Incus YAML
-	@echo "$(GREEN)Applying default profile for $(INCUS_PROJECT)...$(RESET)"
-	@incus profile edit default --project $(INCUS_PROJECT) < incus/profiles/homelab-default.yaml
+setup-profiles: ## Import all profiles from incus/profiles/
+	@echo "$(GREEN)Importing profiles for $(INCUS_PROJECT)...$(RESET)"
+	@for file in incus/profiles/*.yaml; do \
+		name=$$(basename "$$file" .yaml); \
+		if [ "$$name" = "homelab-default" ]; then \
+			target="default"; \
+		else \
+			target="$$name"; \
+		fi; \
+		if ! incus profile show "$$target" --project $(INCUS_PROJECT) >/dev/null 2>&1; then \
+			echo "  Creating profile: $$target"; \
+			incus profile create "$$target" --project $(INCUS_PROJECT); \
+		fi; \
+		echo "  Applying: $$file -> $$target"; \
+		incus profile edit "$$target" --project $(INCUS_PROJECT) < "$$file"; \
+	done
 
 #=============================================================================
 # Backup and restore
