@@ -169,7 +169,7 @@ setup-profiles: ## Import all profiles from incus/profiles/
 			incus profile create "$$target" --project $(INCUS_PROJECT); \
 		fi; \
 		echo "  Applying: $$file -> $$target"; \
-		sed 's/uid 1000 1000/uid $(INCUS_UID) $(INCUS_UID)/; s/gid 1000 1000/gid $(INCUS_GID) $(INCUS_GID)/' "$$file" | \
+		sed 's/__UID__/$(INCUS_UID)/g; s/__GID__/$(INCUS_GID)/g' "$$file" | \
 			incus profile edit "$$target" --project $(INCUS_PROJECT); \
 	done
 

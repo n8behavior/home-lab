@@ -1,16 +1,16 @@
 # Default Profile for homelab project
 # Provides root disk, network, and UID mapping for containers
 #
-# Applied via: make setup-profile
-# Or directly: incus profile edit default --project homelab < incus/profiles/homelab-default.yaml
+# NOTE: __UID__ and __GID__ placeholders are substituted by `make setup-profiles`
+# with the current user's UID/GID. Do not apply this file directly.
 
 description: Default Incus profile for homelab project
 
 config:
   security.nesting: "true"
   raw.idmap: |-
-    uid 1000 1000
-    gid 1000 1000
+    uid __UID__ __UID__
+    gid __GID__ __GID__
 
 devices:
   root:
