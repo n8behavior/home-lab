@@ -1,0 +1,22 @@
+# Default Profile for homelab project
+# Provides root disk, network, and UID mapping for containers
+#
+# Applied via: make setup-profile
+# Or directly: incus profile edit default --project homelab < incus/profiles/homelab-default.yaml
+
+description: Default Incus profile for homelab project
+
+config:
+  raw.idmap: |-
+    uid 1000 1000
+    gid 1000 1000
+
+devices:
+  root:
+    path: /
+    pool: default
+    type: disk
+  eth0:
+    name: eth0
+    network: incusbr-1000
+    type: nic

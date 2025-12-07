@@ -45,7 +45,7 @@ bin/mount-recovery foo
 bin/mount-recovery foo remove
 ```
 
-The `bin/init` script configures the required disk paths automatically.
+The Makefile `create-project` target configures the required disk paths automatically.
 
 ## UID Matching
 

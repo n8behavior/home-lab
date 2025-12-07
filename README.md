@@ -5,25 +5,33 @@ Scripted, repeatable home lab setup using [Incus](https://linuxcontainers.org/in
 ## Quick Start
 
 ```bash
-./bin/init
+make init
 ```
 
-This installs:
-- **mdbook** - Documentation system
+This bootstraps:
 - **Incus** - Container and VM manager (from [Zabbly](https://github.com/zabbly/incus))
-- **Incus Web UI** - Browser-based management
+- **Incus Web UI** - Browser-based management at https://localhost:8443
+- **homelab project** - Isolated project with UID mapping and device restrictions
 
 ## Prerequisites
 
 - Linux with apt (Debian/Ubuntu)
-- Rust toolchain (`cargo`)
+
+## Other Commands
+
+```bash
+make status   # Show projects and instances
+make backup   # Backup data to Recovery drive
+make restore  # Restore from Recovery drive
+make help     # Show all targets
+```
 
 ## Documentation
 
-Build and serve the docs:
+Docs are built with [mdbook](https://rust-lang.github.io/mdBook/):
 
 ```bash
-cd docs && mdbook serve
+make docs-serve
 ```
 
 Then open http://localhost:3000

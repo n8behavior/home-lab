@@ -1,0 +1,51 @@
+#cloud-config
+# Incus Host - Creates a container/VM capable of running Incus
+#
+# Usage:
+#   incus launch images:ubuntu/24.04/cloud my-incus-host \
+#     -c security.nesting=true \
+#     -c cloud-init.user-data="$(cat incus/cloud-init/incus-host.yaml)"
+#
+# After boot:
+#   incus exec my-incus-host -- cloud-init status --wait
+#   incus exec my-incus-host -- incus list
+
+package_update: true
+
+packages:
+  - git
+  - make
+  - curl
+  - gpg
+
+runcmd:
+  # Download and verify Zabbly GPG key
+  - mkdir -p /etc/apt/keyrings
+  - curl -fsSL https://pkgs.zabbly.com/key.asc -o /etc/apt/keyrings/zabbly.asc
+  - |
+    EXPECTED="4EFC590696CB15B87C73A3AD82CC8797C838DCFD"
+    ACTUAL=$(gpg --show-keys --fingerprint /etc/apt/keyrings/zabbly.asc 2>/dev/null | grep -oP '[A-F0-9 ]{40,}' | tr -d ' ' | head -1)
+    if [ "$ACTUAL" != "$EXPECTED" ]; then
+      echo "GPG key fingerprint mismatch! Expected: $EXPECTED, Got: $ACTUAL" >&2
+      exit 1
+    fi
+    echo "GPG key verified: $ACTUAL"
+  # Add Zabbly repository
+  - |
+    . /etc/os-release
+    cat > /etc/apt/sources.list.d/zabbly-incus-stable.sources <<EOF
+    Enabled: yes
+    Types: deb
+    URIs: https://pkgs.zabbly.com/incus/stable
+    Suites: $VERSION_CODENAME
+    Components: main
+    Architectures: $(dpkg --print-architecture)
+    Signed-By: /etc/apt/keyrings/zabbly.asc
+    EOF
+  # Install Incus
+  - apt-get update
+  - apt-get install -y incus incus-ui-canonical
+  # Enable web UI
+  - incus config set core.https_address :8443
+  # Signal completion
+  - echo "Incus host ready" > /root/incus-host-ready

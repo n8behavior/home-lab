@@ -36,10 +36,10 @@ incus exec <container> -- systemctl restart polkit pcscd
 
 ## Project Configuration
 
-The `user-1000` project must allow USB devices. This is configured by `bin/init`:
+The project must allow USB devices. For the `homelab` project, this is configured by `make create-project`:
 
 ```bash
-sudo incus project set user-1000 restricted.devices.usb=allow
+incus project set homelab restricted.devices.usb=allow
 ```
 
 ## Verification
