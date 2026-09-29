@@ -23,8 +23,9 @@ INCUS_PROJECT   ?= homelab
 INCUS_UID       ?= $(shell id -u)
 INCUS_GID       ?= $(shell id -g)
 
-# Removable media (udisks2 default: /media/$USER)
-MEDIA_DIR       ?= /media/$(USER)
+# Removable media: udisks2 mounts under /run/media/$USER on Ubuntu 26.04 and
+# /media/$USER on 24.04
+MEDIA_DIR       ?= $(if $(wildcard /run/media/$(USER)),/run/media/$(USER),/media/$(USER))
 RECOVERY_DIR    ?= $(MEDIA_DIR)/Recovery
 BACKUP_DIR      ?= $(RECOVERY_DIR)/backups
 # ANCHOR_END: paths

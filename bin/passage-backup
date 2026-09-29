@@ -2,7 +2,15 @@
 set -euo pipefail
 
 PASSAGE_STORE="$HOME/.passage/store"
-BACKUP_PATH="/media/sandman/Recovery/secrets/passage-store"
+# Ubuntu 26.04 mounts the drive under /run/media, 24.04 under /media; an
+# exported RECOVERY_ROOT wins.
+if [[ -z "${RECOVERY_ROOT:-}" ]]; then
+    RECOVERY_ROOT="/media/sandman/Recovery"
+    for dir in /run/media/sandman/Recovery /media/sandman/Recovery; do
+        [[ -d "$dir" ]] && { RECOVERY_ROOT="$dir"; break; }
+    done
+fi
+BACKUP_PATH="$RECOVERY_ROOT/secrets/passage-store"
 
 case "${1:-}" in
     push)

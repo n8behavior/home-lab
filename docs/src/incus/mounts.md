@@ -112,7 +112,7 @@ Or better: add the path to allowed paths, then use `incus` without sudo.
 If you unmount and remount a drive on the host while the container is running, the mount inside the container becomes stale:
 
 ```
-fatal: cannot change to '/media/$USER/Recovery/': Input/output error
+fatal: cannot change to '/run/media/$USER/Recovery/': Input/output error
 ```
 
 Fix by removing and re-adding the device:

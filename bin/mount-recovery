@@ -3,7 +3,15 @@ set -euo pipefail
 
 # Mount the Recovery drive into an Incus container for testing
 
-RECOVERY_PATH="/media/sandman/Recovery"
+# Ubuntu 26.04 mounts the drive under /run/media, 24.04 under /media; an
+# exported RECOVERY_ROOT wins.
+if [[ -z "${RECOVERY_ROOT:-}" ]]; then
+    RECOVERY_ROOT="/media/sandman/Recovery"
+    for dir in /run/media/sandman/Recovery /media/sandman/Recovery; do
+        [[ -d "$dir" ]] && { RECOVERY_ROOT="$dir"; break; }
+    done
+fi
+RECOVERY_PATH="$RECOVERY_ROOT"
 
 usage() {
     echo "Usage: $0 <container> [add|remove]"

@@ -91,7 +91,7 @@ After a fresh Ubuntu install from Recovery drive:
 gh repo clone home-lab
 cd home-lab
 make init
-make restore BACKUP_DIR=/media/sandman/Recovery/backups
+make restore    # BACKUP_DIR defaults to backups/ on the Recovery drive
 make status
 ```
 
